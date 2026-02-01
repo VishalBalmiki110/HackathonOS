@@ -6,8 +6,6 @@ HackathonOS is an intelligent system that discovers upcoming hackathons and auto
 
 Instead of just tracking events, HackathonOS actively helps you **plan, execute, and submit**.
 
----
-
 ## Why HackathonOS?
 
 Hackathons are high-leverage learning environments, but most participants fail to submit due to poor planning.
@@ -20,8 +18,6 @@ Common problems:
 * Time planning is unrealistic
 
 **HackathonOS treats time as a first-class resource.**
-
----
 
 ## Core Features
 
