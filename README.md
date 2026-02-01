@@ -18,7 +18,6 @@ Common problems:
 * Time planning is unrealistic
 
 **HackathonOS treats time as a first-class resource.**
-
 ## Core Features
 
 * **Hackathon Aggregation**
