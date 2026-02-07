@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import get_settings
 from app.models.hackathon import Hackathon
-from app.services.scraper import DevpostScraper, MLHScraper, UnstopScraper
+from app.services.scraper import DevpostScraper, DoraHacksScraper, MLHScraper, UnstopScraper
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -49,6 +49,7 @@ async def _ingest_all(db: AsyncSession):
     """Run ingestion with the provided database session."""
     scrapers = [
         DevpostScraper(),
+        DoraHacksScraper(),
         MLHScraper(),
         UnstopScraper(),
     ]

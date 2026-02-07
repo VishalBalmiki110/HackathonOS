@@ -55,7 +55,7 @@ export default function DiscoverPage() {
         return result
     }, [loadedPages, page])
 
-    const platforms = ['devpost', 'mlh', 'unstop']
+    const platforms = ['devpost', 'dorahacks', 'mlh', 'unstop']
     const modes = ['online', 'in-person', 'hybrid']
     const hasMore = data && page < data.total_pages
 

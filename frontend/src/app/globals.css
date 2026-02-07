@@ -158,10 +158,146 @@ body {
   color: var(--text-primary);
 }
 
+[data-theme="light"] .text-gray-300 {
+  color: #374151;
+}
+
 [data-theme="light"] .text-gray-400 {
   color: var(--text-secondary);
 }
 
 [data-theme="light"] .text-gray-500 {
   color: var(--text-muted);
+}
+
+/* Light theme background overrides */
+[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .bg-white\/20 {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Light theme hover states */
+[data-theme="light"] .hover\:text-white:hover {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .hover\:bg-white\/20:hover {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Light theme focus states */
+[data-theme="light"] .focus\:border-primary-500:focus {
+  border-color: #0ea5e9;
+}
+
+/* Light theme placeholder text */
+[data-theme="light"] .placeholder-gray-400::placeholder {
+  color: #9ca3af;
+}
+
+/* Platform badge colors - Dark mode (default) */
+.platform-badge-devpost {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.platform-badge-mlh {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.platform-badge-unstop {
+  background-color: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.platform-badge-dorahacks {
+  background-color: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+/* Platform badge colors - Light mode */
+[data-theme="light"] .platform-badge-devpost {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+[data-theme="light"] .platform-badge-mlh {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+[data-theme="light"] .platform-badge-unstop {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #a855f7;
+}
+
+[data-theme="light"] .platform-badge-dorahacks {
+  background-color: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #f97316;
+}
+
+/* Mode and tag badge styles */
+.mode-badge {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #d1d5db;
+}
+
+[data-theme="light"] .mode-badge {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #374151;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.tag-badge {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #9ca3af;
+}
+
+[data-theme="light"] .tag-badge {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #6b7280;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.platform-badge-fallback {
+  background-color: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+[data-theme="light"] .platform-badge-fallback {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
 }

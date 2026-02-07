@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Clock, MapPin, Trophy, ExternalLink, Calendar, Bookmark, BookmarkCheck } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { useState, useEffect } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/lib/auth'
 
@@ -23,8 +24,8 @@ interface Hackathon {
 
 export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
     const { token } = useAuthStore()
+    const queryClient = useQueryClient()
     const [isBookmarked, setIsBookmarked] = useState(false)
-    const [isBookmarking, setIsBookmarking] = useState(false)
 
     const deadline = new Date(hackathon.submission_deadline)
     const daysLeft = hackathon.days_until_deadline ??
@@ -33,9 +34,10 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
     const urgencyColor = daysLeft <= 7 ? 'text-red-400' : daysLeft <= 14 ? 'text-yellow-400' : 'text-green-400'
 
     const platformColors: Record<string, string> = {
-        devpost: 'bg-blue-500/20 text-blue-400',
-        mlh: 'bg-red-500/20 text-red-400',
-        unstop: 'bg-purple-500/20 text-purple-400',
+        devpost: 'platform-badge-devpost',
+        mlh: 'platform-badge-mlh',
+        unstop: 'platform-badge-unstop',
+        dorahacks: 'platform-badge-dorahacks',
     }
 
     // Check bookmark status on mount
@@ -47,6 +49,30 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
         }
     }, [hackathon.id, token])
 
+    // Bookmark mutation with cache invalidation
+    const bookmarkMutation = useMutation({
+        mutationFn: async (shouldBookmark: boolean) => {
+            if (shouldBookmark) {
+                return api.bookmarkHackathon(hackathon.id)
+            } else {
+                return api.unbookmarkHackathon(hackathon.id)
+            }
+        },
+        onMutate: async (shouldBookmark) => {
+            // Optimistic update
+            setIsBookmarked(shouldBookmark)
+        },
+        onSuccess: () => {
+            // Invalidate bookmarks query to refresh saved page
+            queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
+        },
+        onError: (error, shouldBookmark) => {
+            // Revert optimistic update on error
+            setIsBookmarked(!shouldBookmark)
+            console.error('Failed to update bookmark:', error)
+        },
+    })
+
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
@@ -56,20 +82,7 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
             return
         }
 
-        setIsBookmarking(true)
-        try {
-            if (isBookmarked) {
-                await api.unbookmarkHackathon(hackathon.id)
-                setIsBookmarked(false)
-            } else {
-                await api.bookmarkHackathon(hackathon.id)
-                setIsBookmarked(true)
-            }
-        } catch (error) {
-            console.error('Failed to update bookmark')
-        } finally {
-            setIsBookmarking(false)
-        }
+        bookmarkMutation.mutate(!isBookmarked)
     }
 
     return (
@@ -77,11 +90,11 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
             {/* Bookmark Button */}
             <button
                 onClick={handleBookmark}
-                disabled={isBookmarking}
+                disabled={bookmarkMutation.isPending}
                 className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all ${isBookmarked
-                        ? 'bg-primary-500/20 text-primary-400'
-                        : 'bg-black/40 text-white/60 hover:text-white hover:bg-black/60'
-                    } ${isBookmarking ? 'opacity-50' : ''}`}
+                    ? 'bg-primary-500/20 text-primary-400'
+                    : 'bg-black/40 text-white/60 hover:text-white hover:bg-black/60'
+                    } ${bookmarkMutation.isPending ? 'opacity-50' : ''}`}
                 title={isBookmarked ? 'Remove bookmark' : 'Bookmark this hackathon'}
             >
                 {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
@@ -100,11 +113,11 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
 
             {/* Platform Badge */}
             <div className="flex items-center gap-2 mb-3">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${platformColors[hackathon.platform] || 'bg-gray-500/20 text-gray-400'}`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${platformColors[hackathon.platform] || 'platform-badge-fallback'}`}>
                     {hackathon.platform.toUpperCase()}
                 </span>
                 {hackathon.mode && (
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-gray-300">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium mode-badge">
                         {hackathon.mode}
                     </span>
                 )}
@@ -148,12 +161,12 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
             {hackathon.tags && hackathon.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-4">
                     {hackathon.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-xs">
+                        <span key={tag} className="px-2 py-0.5 rounded tag-badge text-xs">
                             {tag}
                         </span>
                     ))}
                     {hackathon.tags.length > 3 && (
-                        <span className="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-xs">
+                        <span className="px-2 py-0.5 rounded tag-badge text-xs">
                             +{hackathon.tags.length - 3}
                         </span>
                     )}

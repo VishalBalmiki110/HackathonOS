@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import init_db
+from app.services.ingestion_scheduler import start_ingestion_scheduler, stop_ingestion_scheduler
 from app.routers import (
     hackathons, users, schedules, calendar, auth, bookmarks, 
     teams, notes, checklist, notifications, export, timezone
@@ -18,9 +19,14 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
+    print("=== LIFESPAN STARTUP EXECUTING ===")
     await init_db()
+    print("=== DATABASE INITIALIZED ===")
+    start_ingestion_scheduler()  # Start automatic hackathon scraping
+    print("=== SCHEDULER START CALLED ===")
     yield
     # Shutdown
+    stop_ingestion_scheduler()
 
 
 app = FastAPI(
