@@ -31,8 +31,6 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
     const daysLeft = hackathon.days_until_deadline ??
         Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 
-    const urgencyColor = daysLeft <= 7 ? 'text-red-400' : daysLeft <= 14 ? 'text-yellow-400' : 'text-green-400'
-
     const platformColors: Record<string, string> = {
         devpost: 'platform-badge-devpost',
         mlh: 'platform-badge-mlh',
@@ -58,7 +56,7 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
                 return api.unbookmarkHackathon(hackathon.id)
             }
         },
-        onMutate: async (shouldBookmark) => {
+        onMutate: async (shouldBookmark: boolean) => {
             // Optimistic update
             setIsBookmarked(shouldBookmark)
         },
@@ -66,7 +64,7 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
             // Invalidate bookmarks query to refresh saved page
             queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
         },
-        onError: (error, shouldBookmark) => {
+        onError: (error: any, shouldBookmark: boolean) => {
             // Revert optimistic update on error
             setIsBookmarked(!shouldBookmark)
             console.error('Failed to update bookmark:', error)
@@ -86,15 +84,20 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
     }
 
     return (
-        <div className="card card-hover group relative">
+        <div className={`card group relative overflow-hidden ${daysLeft <= 7 ? 'border-accent-danger/30' : ''}`}>
+            {/* Urgency glow for critical deadlines */}
+            {daysLeft <= 7 && (
+                <div className="absolute inset-0 bg-gradient-to-br from-accent-danger/5 to-transparent pointer-events-none" />
+            )}
+
             {/* Bookmark Button */}
             <button
                 onClick={handleBookmark}
                 disabled={bookmarkMutation.isPending}
-                className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all ${isBookmarked
-                    ? 'bg-primary-500/20 text-primary-400'
-                    : 'bg-black/40 text-white/60 hover:text-white hover:bg-black/60'
-                    } ${bookmarkMutation.isPending ? 'opacity-50' : ''}`}
+                className={`absolute top-4 right-4 z-10 p-2.5 rounded-lg backdrop-blur-sm transition-all ${isBookmarked
+                        ? 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                        : 'bg-surface-moderate border border-border-subtle text-text-tertiary hover:text-accent-primary hover:border-accent-primary/30'
+                    } ${bookmarkMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={isBookmarked ? 'Remove bookmark' : 'Bookmark this hackathon'}
             >
                 {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
@@ -102,71 +105,80 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
 
             {/* Image */}
             {hackathon.image_url && (
-                <div className="h-40 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-xl bg-white/5">
+                <div className="h-40 -mx-6 -mt-6 mb-5 overflow-hidden bg-surface-subtle relative">
                     <img
                         src={hackathon.image_url}
                         alt={hackathon.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-transparent to-transparent" />
                 </div>
             )}
 
-            {/* Platform Badge */}
-            <div className="flex items-center gap-2 mb-3">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${platformColors[hackathon.platform] || 'platform-badge-fallback'}`}>
+            {/* Platform & Mode Badges */}
+            <div className="flex items-center gap-2 mb-4">
+                <span className={`px-2.5 py-1 rounded-md text-xs ${platformColors[hackathon.platform] || 'platform-badge-fallback'}`}>
                     {hackathon.platform.toUpperCase()}
                 </span>
                 {hackathon.mode && (
-                    <span className="px-2 py-1 rounded-full text-xs font-medium mode-badge">
+                    <span className="px-2.5 py-1 rounded-md text-xs mode-badge">
                         {hackathon.mode}
                     </span>
                 )}
             </div>
 
             {/* Title */}
-            <h3 className="text-xl font-semibold mb-2 line-clamp-2 group-hover:text-primary-400 transition-colors">
+            <h3 className="text-xl font-display font-bold mb-3 line-clamp-2 text-text-primary group-hover:text-accent-primary transition-colors">
                 {hackathon.name}
             </h3>
 
             {/* Description */}
             {hackathon.description && (
-                <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                <p className="text-text-tertiary text-sm mb-4 line-clamp-2 leading-relaxed">
                     {hackathon.description}
                 </p>
             )}
 
-            {/* Details */}
-            <div className="space-y-2 mb-4">
-                <div className={`flex items-center gap-2 ${urgencyColor}`}>
+            {/* Countdown & Details */}
+            <div className="space-y-2.5 mb-4">
+                {/* Urgency countdown */}
+                <div className={`flex items-center gap-2 font-mono text-sm ${daysLeft <= 3 ? 'urgency-critical' :
+                        daysLeft <= 7 ? 'urgency-warning' :
+                            'urgency-normal'
+                    }`}>
                     <Clock size={16} />
-                    <span className="text-sm font-medium">
-                        {daysLeft === 0 ? 'Ends today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`}
+                    <span className="font-semibold">
+                        {daysLeft === 0 ? 'ENDS TODAY!' : `${daysLeft}d ${daysLeft <= 3 ? 'URGENT' : 'left'}`}
                     </span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-400">
+
+                {/* Deadline date */}
+                <div className="flex items-center gap-2 text-text-tertiary font-mono text-sm">
                     <Calendar size={16} />
-                    <span className="text-sm">
-                        Deadline: {format(deadline, 'MMM d, yyyy')}
+                    <span>
+                        {format(deadline, 'MMM d, yyyy')}
                     </span>
                 </div>
+
+                {/* Prize pool */}
                 {hackathon.prize_pool && (
-                    <div className="flex items-center gap-2 text-yellow-400">
+                    <div className="flex items-center gap-2 text-accent-warning font-mono text-sm">
                         <Trophy size={16} />
-                        <span className="text-sm">{hackathon.prize_pool}</span>
+                        <span className="font-semibold">{hackathon.prize_pool}</span>
                     </div>
                 )}
             </div>
 
             {/* Tags */}
             {hackathon.tags && hackathon.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-4">
+                <div className="flex flex-wrap gap-1.5 mb-5">
                     {hackathon.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="px-2 py-0.5 rounded tag-badge text-xs">
+                        <span key={tag} className="px-2 py-1 rounded tag-badge text-xs">
                             {tag}
                         </span>
                     ))}
                     {hackathon.tags.length > 3 && (
-                        <span className="px-2 py-0.5 rounded tag-badge text-xs">
+                        <span className="px-2 py-1 rounded tag-badge text-xs font-mono">
                             +{hackathon.tags.length - 3}
                         </span>
                     )}
@@ -174,21 +186,21 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-2 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-3 pt-5 border-t border-border-subtle">
                 <Link
                     href={`/hackathon/${hackathon.id}`}
-                    className="flex-1 btn-primary text-center text-sm py-2"
+                    className="flex-1 text-center btn btn-primary text-sm py-2.5"
                 >
-                    Schedule Now
+                    <span>Schedule Now</span>
                 </Link>
                 <a
                     href={hackathon.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                    className="p-2.5 rounded-lg bg-surface-moderate border border-border-subtle hover:bg-surface-strong hover:border-border-moderate transition-all"
                     title="View on platform"
                 >
-                    <ExternalLink size={18} />
+                    <ExternalLink size={18} className="text-text-tertiary" />
                 </a>
             </div>
         </div>
