@@ -1,23 +1,66 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Filter, Clock, MapPin, Trophy, ExternalLink, Calendar } from 'lucide-react'
+import { Search, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { HackathonCard } from '@/components/hackathon/HackathonCard'
 
 export default function DiscoverPage() {
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [platform, setPlatform] = useState('')
     const [mode, setMode] = useState('')
+    const [page, setPage] = useState(1)
+    const [loadedPages, setLoadedPages] = useState<Record<number, any[]>>({})
 
-    const { data, isLoading } = useQuery({
-        queryKey: ['hackathons', { search, platform, mode }],
-        queryFn: () => api.getHackathons({ search, platform, mode }),
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [search])
+
+    // Reset when filters change
+    useEffect(() => {
+        setPage(1)
+        setLoadedPages({})
+    }, [debouncedSearch, platform, mode])
+
+    const { data, isLoading, isFetching } = useQuery({
+        queryKey: ['hackathons', { search: debouncedSearch, platform, mode, page }],
+        queryFn: () => api.getHackathons({ search: debouncedSearch, platform, mode, page }),
+        staleTime: 1000 * 60 * 5, // 5 minutes
     })
+
+    // Store loaded pages
+    useEffect(() => {
+        if (data?.items) {
+            setLoadedPages(prev => ({
+                ...prev,
+                [page]: data.items
+            }))
+        }
+    }, [data, page])
+
+    // Combine all loaded pages
+    const allHackathons = useMemo(() => {
+        const result: any[] = []
+        for (let i = 1; i <= page; i++) {
+            if (loadedPages[i]) {
+                result.push(...loadedPages[i])
+            }
+        }
+        return result
+    }, [loadedPages, page])
 
     const platforms = ['devpost', 'mlh', 'unstop']
     const modes = ['online', 'in-person', 'hybrid']
+    const hasMore = data && page < data.total_pages
+
+    // Show loading only on initial load
+    const showLoading = isLoading && page === 1 && Object.keys(loadedPages).length === 0
 
     return (
         <div className="min-h-screen px-4 py-8">
@@ -78,7 +121,7 @@ export default function DiscoverPage() {
                 </div>
 
                 {/* Results */}
-                {isLoading ? (
+                {showLoading ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
                             <div key={i} className="card animate-pulse">
@@ -88,18 +131,38 @@ export default function DiscoverPage() {
                             </div>
                         ))}
                     </div>
-                ) : data?.items?.length ? (
+                ) : allHackathons.length > 0 ? (
                     <>
                         <p className="text-gray-400 mb-4">
-                            Found {data.total} hackathon{data.total !== 1 ? 's' : ''}
+                            Showing {allHackathons.length} of {data?.total ?? allHackathons.length} hackathon{(data?.total ?? allHackathons.length) !== 1 ? 's' : ''}
                         </p>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {data.items.map((hackathon: any) => (
+                            {allHackathons.map((hackathon: any) => (
                                 <HackathonCard key={hackathon.id} hackathon={hackathon} />
                             ))}
                         </div>
+
+                        {/* Load More Button */}
+                        {hasMore && (
+                            <div className="text-center mt-8">
+                                <button
+                                    onClick={() => setPage(p => p + 1)}
+                                    disabled={isFetching}
+                                    className="btn-primary inline-flex items-center gap-2"
+                                >
+                                    {isFetching ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={18} />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        <>Load More Hackathons</>
+                                    )}
+                                </button>
+                            </div>
+                        )}
                     </>
-                ) : (
+                ) : data?.total === 0 ? (
                     <div className="text-center py-20">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
                             <Search className="w-10 h-10 text-gray-500" />
@@ -108,6 +171,16 @@ export default function DiscoverPage() {
                         <p className="text-gray-400">
                             Try adjusting your filters or check back later for new hackathons.
                         </p>
+                    </div>
+                ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="card animate-pulse">
+                                <div className="h-40 bg-white/10 rounded-lg mb-4" />
+                                <div className="h-6 bg-white/10 rounded mb-2 w-3/4" />
+                                <div className="h-4 bg-white/10 rounded w-1/2" />
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

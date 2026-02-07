@@ -27,6 +27,7 @@ class User(Base):
     
     # Google Calendar
     google_calendar_refresh_token = Column(Text)
+    google_access_token = Column(Text)  # For immediate calendar access
     google_calendar_connected = Column(Boolean, default=False)
     
     # Metadata

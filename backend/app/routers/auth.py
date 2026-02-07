@@ -184,3 +184,98 @@ async def get_google_auth_url():
     return {
         "url": f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
     }
+
+
+@router.get("/google/callback")
+async def google_callback(
+    code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Handle Google OAuth callback.
+    
+    Exchange authorization code for tokens and redirect to frontend with JWT.
+    """
+    import httpx
+    from fastapi.responses import RedirectResponse
+    
+    # Exchange code for tokens
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": settings.google_client_id,
+                "client_secret": settings.google_client_secret,
+                "redirect_uri": settings.google_redirect_uri,
+                "grant_type": "authorization_code",
+            },
+        )
+        
+        if token_response.status_code != 200:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth/login?error=token_exchange_failed"
+            )
+        
+        tokens = token_response.json()
+        
+        # Get user info
+        userinfo_response = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {tokens['access_token']}"},
+        )
+        
+        if userinfo_response.status_code != 200:
+            return RedirectResponse(
+                url=f"{settings.frontend_url}/auth/login?error=userinfo_failed"
+            )
+        
+        userinfo = userinfo_response.json()
+    
+    # Find or create user
+    result = await db.execute(
+        select(User).where(User.google_id == userinfo["id"])
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Check if user exists by email
+        result = await db.execute(
+            select(User).where(User.email == userinfo["email"])
+        )
+        user = result.scalar_one_or_none()
+        
+        if user:
+            # Link Google account
+            user.google_id = userinfo["id"]
+            user.picture_url = userinfo.get("picture")
+        else:
+            # Create new user
+            user = User(
+                email=userinfo["email"],
+                name=userinfo.get("name"),
+                google_id=userinfo["id"],
+                picture_url=userinfo.get("picture"),
+            )
+            db.add(user)
+    
+    # Store refresh token if provided (for calendar access)
+    if "refresh_token" in tokens:
+        user.google_calendar_refresh_token = tokens["refresh_token"]
+    
+    # Always mark calendar as connected since we request calendar scope
+    # Also store access token for immediate use
+    user.google_calendar_connected = True
+    user.google_access_token = tokens.get("access_token")
+    
+    await db.commit()
+    await db.refresh(user)
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    # Redirect to frontend with token
+    return RedirectResponse(
+        url=f"{settings.frontend_url}/auth/callback?token={access_token}"
+    )
+

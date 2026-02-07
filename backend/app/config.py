@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:3000"]
     
+    # Frontend URL (for OAuth redirects)
+    frontend_url: str = "http://localhost:3000"
+    
     class Config:
         env_file = ".env"
         extra = "ignore"

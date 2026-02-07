@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { Clock, MapPin, Trophy, ExternalLink, Calendar, ArrowRight } from 'lucide-react'
+import { Clock, MapPin, Trophy, ExternalLink, Calendar, Bookmark, BookmarkCheck } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
+import { useState, useEffect } from 'react'
+import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/auth'
 
 interface Hackathon {
     id: string
@@ -19,6 +22,10 @@ interface Hackathon {
 }
 
 export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
+    const { token } = useAuthStore()
+    const [isBookmarked, setIsBookmarked] = useState(false)
+    const [isBookmarking, setIsBookmarking] = useState(false)
+
     const deadline = new Date(hackathon.submission_deadline)
     const daysLeft = hackathon.days_until_deadline ??
         Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -31,8 +38,55 @@ export function HackathonCard({ hackathon }: { hackathon: Hackathon }) {
         unstop: 'bg-purple-500/20 text-purple-400',
     }
 
+    // Check bookmark status on mount
+    useEffect(() => {
+        if (token) {
+            api.checkBookmark(hackathon.id)
+                .then(({ bookmarked }) => setIsBookmarked(bookmarked))
+                .catch(() => { })
+        }
+    }, [hackathon.id, token])
+
+    const handleBookmark = async (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (!token) {
+            alert('Please sign in to bookmark hackathons')
+            return
+        }
+
+        setIsBookmarking(true)
+        try {
+            if (isBookmarked) {
+                await api.unbookmarkHackathon(hackathon.id)
+                setIsBookmarked(false)
+            } else {
+                await api.bookmarkHackathon(hackathon.id)
+                setIsBookmarked(true)
+            }
+        } catch (error) {
+            console.error('Failed to update bookmark')
+        } finally {
+            setIsBookmarking(false)
+        }
+    }
+
     return (
-        <div className="card card-hover group">
+        <div className="card card-hover group relative">
+            {/* Bookmark Button */}
+            <button
+                onClick={handleBookmark}
+                disabled={isBookmarking}
+                className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all ${isBookmarked
+                        ? 'bg-primary-500/20 text-primary-400'
+                        : 'bg-black/40 text-white/60 hover:text-white hover:bg-black/60'
+                    } ${isBookmarking ? 'opacity-50' : ''}`}
+                title={isBookmarked ? 'Remove bookmark' : 'Bookmark this hackathon'}
+            >
+                {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+            </button>
+
             {/* Image */}
             {hackathon.image_url && (
                 <div className="h-40 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-xl bg-white/5">

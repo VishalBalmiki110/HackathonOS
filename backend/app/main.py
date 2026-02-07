@@ -6,7 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import init_db
-from app.routers import hackathons, users, schedules, calendar, auth
+from app.routers import (
+    hackathons, users, schedules, calendar, auth, bookmarks, 
+    teams, notes, checklist, notifications, export, timezone
+)
 
 settings = get_settings()
 
@@ -42,6 +45,13 @@ app.include_router(hackathons.router, prefix="/api/hackathons", tags=["Hackathon
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(schedules.router, prefix="/api/schedules", tags=["Schedules"])
 app.include_router(calendar.router, prefix="/api/calendar", tags=["Calendar"])
+app.include_router(bookmarks.router, prefix="/api/bookmarks", tags=["Bookmarks"])
+app.include_router(teams.router, prefix="/api/teams", tags=["Teams"])
+app.include_router(notes.router, prefix="/api/notes", tags=["Session Notes"])
+app.include_router(checklist.router, prefix="/api/checklist", tags=["Submission Checklist"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(export.router, prefix="/api/export", tags=["Export"])
+app.include_router(timezone.router, prefix="/api/timezone", tags=["Timezone"])
 
 
 @app.get("/")

@@ -31,8 +31,8 @@ class CalendarService:
         
         Returns the number of synced sessions.
         """
-        if not user.google_calendar_refresh_token:
-            raise ValueError("User has not authorized Google Calendar access")
+        if not user.google_calendar_refresh_token and not user.google_access_token:
+            raise ValueError("User has not authorized Google Calendar access. Please sign out and sign in again.")
         
         # Get Google Calendar service
         service = await self._get_calendar_service(user)
@@ -65,7 +65,7 @@ class CalendarService:
         
         Returns the number of removed events.
         """
-        if not user.google_calendar_refresh_token:
+        if not user.google_calendar_refresh_token and not user.google_access_token:
             raise ValueError("User has not authorized Google Calendar access")
         
         service = await self._get_calendar_service(user)
@@ -136,8 +136,9 @@ class CalendarService:
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
         
+        # Use refresh token if available, otherwise use access token
         credentials = Credentials(
-            token=None,
+            token=user.google_access_token,
             refresh_token=user.google_calendar_refresh_token,
             client_id=settings.google_client_id,
             client_secret=settings.google_client_secret,

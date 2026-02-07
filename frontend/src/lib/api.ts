@@ -37,6 +37,16 @@ export const api = {
         return data
     },
 
+    // Profile
+    uploadAvatar: async (file: File) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        const { data } = await client.post('/api/users/me/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        return data
+    },
+
     // Hackathons
     getHackathons: async (params?: { search?: string; platform?: string; mode?: string; page?: number }) => {
         const { data } = await client.get('/api/hackathons', { params })
@@ -103,6 +113,55 @@ export const api = {
 
     setAvailability: async (availability: Array<{ day_of_week: number; start_time: string; end_time: string }>) => {
         const { data } = await client.put('/api/users/me/availability', availability)
+        return data
+    },
+
+    // Bookmarks
+    getBookmarks: async () => {
+        const { data } = await client.get('/api/bookmarks/hackathons')
+        return data
+    },
+
+    bookmarkHackathon: async (hackathonId: string) => {
+        const { data } = await client.post(`/api/bookmarks/${hackathonId}`)
+        return data
+    },
+
+    unbookmarkHackathon: async (hackathonId: string) => {
+        const { data } = await client.delete(`/api/bookmarks/${hackathonId}`)
+        return data
+    },
+
+    checkBookmark: async (hackathonId: string) => {
+        const { data } = await client.get(`/api/bookmarks/check/${hackathonId}`)
+        return data
+    },
+
+    // Teams
+    getTeams: async () => {
+        const { data } = await client.get('/api/teams')
+        return data
+    },
+
+    getTeam: async (teamId: string) => {
+        const { data } = await client.get(`/api/teams/${teamId}`)
+        return data
+    },
+
+    createTeam: async (teamData: { name: string; description?: string; hackathon_id?: string }) => {
+        const { data } = await client.post('/api/teams', teamData)
+        return data
+    },
+
+    joinTeam: async (inviteCode: string, specialization?: string) => {
+        const { data } = await client.post(`/api/teams/join/${inviteCode}`, null, {
+            params: { specialization }
+        })
+        return data
+    },
+
+    leaveTeam: async (teamId: string) => {
+        const { data } = await client.delete(`/api/teams/${teamId}/leave`)
         return data
     },
 }
