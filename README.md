@@ -99,6 +99,52 @@ Calendar data remains **fully owned by the user**.
 
 ---
 
+## Getting Started
+
+### Prerequisites
+
+*   Docker (v24+)
+*   Docker Compose (v2.20+)
+*   Node.js (v18+) (If running locally without Docker)
+*   Python (3.11+) (If running locally without Docker)
+
+### Quick Start (Recommended)
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/VishalBalmiki110/HackathonOS.git
+    cd HackathonOS
+    ```
+
+2.  **Run with Docker Compose:**
+    ```bash
+    docker-compose up --build
+    ```
+    This will start:
+    *   PostgreSQL database (port 5432)
+    *   Redis cache (port 6379)
+    *   Backend API (port 8000)
+    *   Frontend Dashboard (port 3000)
+
+3.  **Access the application:**
+    *   Frontend: [http://localhost:3000](http://localhost:3000)
+    *   Backend API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### Manual Setup (Development)
+
+**Backend:**
+1.  Navigate to `backend/`: `cd backend`
+2.  Create virtual environment: `python3 -m venv venv && source venv/bin/activate`
+3.  Install dependencies: `pip install -r requirements.txt`
+4.  Run server: `uvicorn app.main:app --reload`
+
+**Frontend:**
+1.  Navigate to `frontend/`: `cd frontend`
+2.  Install dependencies: `npm install`
+3.  Run dev server: `npm run dev`
+
+---
+
 ## Tech Stack
 
 ### Backend
